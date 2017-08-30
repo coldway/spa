@@ -73,14 +73,6 @@ spa.shell = (function () {
             return true ;
         };
 
-        onClickChat = function (event) {
-            if(toggleChat(stateMap.is_chat_retracted)){
-                $.uriAnchor.setAnchor({
-                    chat:(stateMap.is_chat_retracted ? 'open' : 'closed')
-                });
-            }
-            return false;
-        };
 
         copyAnchorMap = function () {
             return $.extend(true, {}, stateMap.anchor_map);
@@ -132,8 +124,33 @@ spa.shell = (function () {
             }
             stateMap.anchor_map = anchor_map_proposed;
 
-        _s_chat_previous = anchor_map_previous._s_chat;
+            _s_chat_previous = anchor_map_previous._s_chat;
+            _s_chat_proposed = anchor_map_proposed._s_chat;
+            if(!anchor_map_previous
+                ||_s_chat_previous !== _s_chat_proposed
+            ){
+                s_chat_proposed = anchor_map_proposed.chat;
+                switch (s_chat_proposed){
+                    case 'open':
+                        toggleChat(true);
+                    break;
+                    case 'closed':
+                        toggleChat(false);
+                    break;
+                    default :
+                        toggleChat(false);
+                        delete anchor_map_proposed.chat;
+                        $.uriAnchor.setAnchor(anchor_map_proposed, null, true)
+                }
+            }
+            return false;
         }
+        onClickChat = function (event) {
+            changeAnchorPart({
+                chat:(stateMap.is_chat_retracted ? 'open' : 'closed')
+            });
+            return false;
+        };
         initModule = function ($container) {
             stateMap.$container = $container;
             $container.html(configMap.main_html);
@@ -141,6 +158,12 @@ spa.shell = (function () {
             jqueryMap.$chat
                 .attr('title',configMap.chat_retracted_title)
                 .click(onClickChat);
+            $.uriAnchor.configModule({
+                schema_map : configMap.anchor_schema_map
+            })
+            $(window)
+                .bind('hashchange',onHashchange)
+                .trigger('hashchange');
         };
 
         return {initModule :initModule};
